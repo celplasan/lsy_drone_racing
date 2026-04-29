@@ -14,12 +14,11 @@ import math
 from typing import TYPE_CHECKING
 
 import numpy as np
-from crazyflow.sim.visualize import draw_line, draw_points
-
-from drone_models.core import load_params
 from scipy.interpolate import CubicSpline
 from scipy.spatial.transform import Rotation as R
 
+from crazyflow.sim.visualize import draw_line, draw_points
+from drone_models.core import load_params
 from lsy_drone_racing.control import Controller
 
 if TYPE_CHECKING:
@@ -60,15 +59,15 @@ class AttitudeController(Controller):
         self._tick = 0
         self._finished = False
 
-
     def generate_waypoints(
         self, obs: dict[str, NDArray[np.floating]], start_pos: np.arrray
-    )-> NDArray[np.floating]:
+    ) -> NDArray[np.floating]:
         """Compute the waypoints.
 
         Args:
             obs: The current observation of the environment. See the environment's observation space
                 for details.
+            start_pos: The starting position of the drone to generate waypoints at the beginning of the race.
 
         Returns:
             The waypoints for the trajectory calculation as a numpy array.
@@ -98,11 +97,10 @@ class AttitudeController(Controller):
 
         return np.array(waypoints)
 
-
     def avoid_obstacles(
         self, obs: dict[str, NDArray[np.floating]], waypoints: np.array
-    )-> NDArray[np.floating]: 
-        """function to move waypoints to better avoid obstacles.
+    ) -> NDArray[np.floating]: 
+        """Function to move waypoints to better avoid obstacles.
 
         Args:
             obs: The current observation of the environment. See the environment's observation space
@@ -113,19 +111,19 @@ class AttitudeController(Controller):
             The orientation as roll, pitch, yaw angles, and the collective thrust
             [r_des, p_des, y_des, t_des] as a numpy array.
         """
-        obstacles = np.asarray(obs["obstacles_pos"],dtype=float)
+        obstacles = np.asarray(obs["obstacles_pos"], dtype=float)
 
         new_wp = [waypoints[0]]
 
         for i in range(1, len(waypoints)):
-            #p0 = new_wp[-1]
+            # p0 = new_wp[-1]
             p1 = waypoints[i]
 
             for obst in obstacles:
                 d = np.linalg.norm(p1 - obst)
 
                 if d < 0.35:
-                # empuje lateral simple
+                    # empuje lateral simple
                     direction = p1 - obst
                     direction /= (np.linalg.norm(direction) + 1e-6)
 
@@ -152,7 +150,7 @@ class AttitudeController(Controller):
 
         waypoints = self.avoid_obstacles(obs, waypoints)
 
-        t = np.linspace(0,20,waypoints.shape[0])
+        t = np.linspace(0, 20, waypoints.shape[0])
 
         self._t_total = 20
         self._des_pos_spline = CubicSpline(t, waypoints)
@@ -175,7 +173,7 @@ class AttitudeController(Controller):
         t = min(self._tick / self._freq, self._t_total)
         if t >= self._t_total:  # Maximum duration reached
             self._finished = True
-            
+
         if not np.allclose(obs["gates_pos"], self._prev_gates, atol=0.05):
             self._prev_gates = obs["gates_pos"].copy()
             self.create_trajectory(obs)
