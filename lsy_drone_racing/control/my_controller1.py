@@ -8,7 +8,7 @@ The waypoints are generated using cubic spline interpolation from a set of prede
 Note that the trajectory uses pre-defined waypoints instead of dynamically generating a good path.
 """
 
-from __future__ import annotations  # Python 3.10 type hints
+from __future__ import annotations
 
 import math
 from typing import TYPE_CHECKING
@@ -23,6 +23,7 @@ from scipy.spatial.transform import Rotation as R
 from lsy_drone_racing.control import Controller
 
 if TYPE_CHECKING:
+    from crazyflow import Sim
     from numpy.typing import NDArray
 
 
@@ -52,10 +53,6 @@ class AttitudeController(Controller):
         self.i_error = np.zeros(3)
         self.g = 9.81
 
-        track_gates = list(config.env.track.gates)
-        track_obstacles = list(config.env.track.obstacles)
-        track_drones = list(config.env.track.drones)
-
         self._prev_gates = obs["gates_pos"].copy()
         self.create_trajectory(obs)
         self._t_total = 15  # s
@@ -64,7 +61,18 @@ class AttitudeController(Controller):
         self._finished = False
 
 
-    def generate_waypoints(self, obs: dict[str, NDArray[np.floating]], start_pos):
+    def generate_waypoints(
+        self, obs: dict[str, NDArray[np.floating]], start_pos: np.arrray
+    )-> NDArray[np.floating]:
+        """Compute the waypoints.
+
+        Args:
+            obs: The current observation of the environment. See the environment's observation space
+                for details.
+
+        Returns:
+            The waypoints for the trajectory calculation as a numpy array.
+        """
         gates_pos = obs["gates_pos"]
         gates_quat = obs["gates_quat"]
 
@@ -91,13 +99,26 @@ class AttitudeController(Controller):
         return np.array(waypoints)
 
 
-    def avoid_obstacles(self, obs: dict[str, NDArray[np.floating]], waypoints):
+    def avoid_obstacles(
+        self, obs: dict[str, NDArray[np.floating]], waypoints: np.array
+    )-> NDArray[np.floating]: 
+        """function to move waypoints to better avoid obstacles.
+
+        Args:
+            obs: The current observation of the environment. See the environment's observation space
+                for details.
+            waypoints: the current waypoints as a numpy array.
+
+        Returns:
+            The orientation as roll, pitch, yaw angles, and the collective thrust
+            [r_des, p_des, y_des, t_des] as a numpy array.
+        """
         obstacles = np.asarray(obs["obstacles_pos"],dtype=float)
 
         new_wp = [waypoints[0]]
 
         for i in range(1, len(waypoints)):
-            p0 = new_wp[-1]
+            #p0 = new_wp[-1]
             p1 = waypoints[i]
 
             for obst in obstacles:
@@ -115,6 +136,17 @@ class AttitudeController(Controller):
         return np.array(new_wp)
 
     def create_trajectory(self, obs: dict[str, NDArray[np.floating]]):
+        """Compute the next desired collective thrust and roll/pitch/yaw of the drone.
+
+        Args:
+            obs: The current observation of the environment. See the environment's observation space
+                for details.
+            info: Optional additional information as a dictionary.
+
+        Returns:
+            The orientation as roll, pitch, yaw angles, and the collective thrust
+            [r_des, p_des, y_des, t_des] as a numpy array.
+        """
         start = obs["pos"]
         waypoints = self.generate_waypoints(obs, start)
 
