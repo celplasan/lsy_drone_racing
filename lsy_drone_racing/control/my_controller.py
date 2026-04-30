@@ -235,7 +235,7 @@ class AttitudeController(Controller):
             sector: The current sector of the drone.
             drone_pos: The position of the drone.
             gates_pos: The position of the gates.
-            sdd_waypoint: I have no idea honestly but it is a numpy array.
+            add_waypoint: I have no idea honestly but it is a numpy array.
 
         Returns:
             The waypoints of the sector as a numpy array.
@@ -373,6 +373,7 @@ class AttitudeController(Controller):
         obstacle_index: int,
     ) -> np.ndarray | None:
         """Check if current spline passes too close to one obstacle in XY.
+        
         Args:
             spline: The current spline.
             sector: The current sector.
@@ -442,7 +443,7 @@ class AttitudeController(Controller):
             sector: The current sector.
             drone_pos: The position before the new spline.
             gates_pos: The position of the gates for this sector.
-            add_waypoints: Something something numpy array.
+            add_waypoint: Something something numpy array.
 
         Returns:
             The spline that the drone will use in the next sector. 
@@ -594,10 +595,11 @@ class AttitudeController(Controller):
 
         Args:
             spline: The spline that the drone follows.
-            vel:spline: The velocity derived from that spline.
+            vel_spline: The velocity derived from that spline.
             drone_pos: The position of the drone.
             drone_vel: The velocity of the drone.
-            drone_quat: The inclination of the drone
+            drone_quat: The inclination of the drone.
+            t: The current time.
 
         Returns:
             The action for the pid as a numpy array.
