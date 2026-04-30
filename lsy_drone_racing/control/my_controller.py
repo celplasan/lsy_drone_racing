@@ -235,6 +235,7 @@ class AttitudeController(Controller):
             sector: The current sector of the drone.
             drone_pos: The position of the drone.
             gates_pos: The position of the gates.
+            sdd_waypoint: I have no idea honestly but it is a numpy array.
 
         Returns:
             The waypoints of the sector as a numpy array.
@@ -372,8 +373,13 @@ class AttitudeController(Controller):
         obstacle_index: int,
     ) -> np.ndarray | None:
         """Check if current spline passes too close to one obstacle in XY.
+        Args:
+            spline: The current spline.
+            sector: The current sector.
+            obstacle_index: The index of the next obstacle.
 
-        Returns a waypoint to insert if too close.
+        Returns:
+            A waypoint to insert if too close. 
         """
         if not self.use_obstacle_avoidance:
             return None
@@ -429,7 +435,19 @@ class AttitudeController(Controller):
         gates_pos: np.ndarray,
         add_waypoint: np.ndarray | None = None,
     ) -> CubicSpline:
-        """Build the current sector spline."""
+        """Build the current sector spline.
+
+        Args:
+            t_now: The current timestep.
+            sector: The current sector.
+            drone_pos: The position before the new spline.
+            gates_pos: The position of the gates for this sector.
+            add_waypoints: Something something numpy array.
+
+        Returns:
+            The spline that the drone will use in the next sector. 
+        
+        """
         waypoints = self._build_sector_waypoints(
             sector=sector,
             drone_pos=drone_pos,
@@ -449,7 +467,6 @@ class AttitudeController(Controller):
         spline = CubicSpline(t_array, waypoints)
 
         # Obstacle correction: check obstacle with same index as sector.
-        # This mirrors the working controller and avoids overreacting to all obstacles.
         avoidance_wp = self._check_obstacle_collision(
             spline=spline,
             sector=sector,
@@ -476,7 +493,17 @@ class AttitudeController(Controller):
         obs: dict[str, NDArray[np.floating]],
         info: dict | None = None,
     ) -> NDArray[np.floating]:
-        """Compute [roll_des, pitch_des, yaw_des, thrust_des]."""
+        """Compute the next desired collective thrust and roll/pitch/yaw of the drone.
+
+        Args:
+            obs: The current observation of the environment. See the environment's observation space
+                for details.
+            info: Optional additional information as a dictionary.
+
+        Returns:
+            The orientation as roll, pitch, yaw angles, and the collective thrust
+            [r_des, p_des, y_des, t_des] as a numpy array.
+        """
         t = min(self._tick / self._freq, self._t_total)
 
         if t >= self._t_total:
@@ -563,7 +590,18 @@ class AttitudeController(Controller):
         drone_quat: np.ndarray,
         t: float,
     ) -> np.ndarray:
-        """Track the spline with a general PID and output attitude command."""
+        """Track the spline with a general PID and output attitude command.
+
+        Args:
+            spline: The spline that the drone follows.
+            vel:spline: The velocity derived from that spline.
+            drone_pos: The position of the drone.
+            drone_vel: The velocity of the drone.
+            drone_quat: The inclination of the drone
+
+        Returns:
+            The action for the pid as a numpy array.
+        """
         t_eval = float(np.clip(t, spline.x[0], spline.x[-1]))
 
         des_pos = spline(t_eval)
