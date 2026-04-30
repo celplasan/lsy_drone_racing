@@ -6,10 +6,6 @@ Main idea:
 - Convert desired force into roll, pitch, yaw, thrust.
 - Avoid copying the full hardcoded solution, but keep a reasonable racing-line structure.
 
-This controller is for:
-
-    control_mode = "attitude"
-
 It returns:
 
     [roll_des, pitch_des, yaw_des, thrust_des]
