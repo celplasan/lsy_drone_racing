@@ -227,7 +227,7 @@ class AttitudeController(Controller):
         sector: int,
         drone_pos: np.ndarray,
         gates_pos: np.ndarray,
-        add_waypoint: np.ndarray | None = None,
+        add_waypoint: np.ndarray,
     ) -> np.ndarray:
         """Generate waypoints for the current sector.
 
