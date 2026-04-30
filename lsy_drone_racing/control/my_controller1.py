@@ -46,9 +46,9 @@ class AttitudeController(Controller):
         self.drone_mass = drone_params["mass"]
 
         self.kp = np.array([0.4, 0.4, 1.25])
-        self.ki = np.array([0.05, 0.05, 0.05])
+        self.ki = np.array([0.3, 0.3, 0.6])
         self.kd = np.array([0.2, 0.2, 0.4])
-        self.ki_range = np.array([2.0, 2.0, 0.4])
+        self.ki_range = np.array([1.0, 1.0, 0.2])
         self.i_error = np.zeros(3)
         self.g = 9.81
 
@@ -67,7 +67,8 @@ class AttitudeController(Controller):
         Args:
             obs: The current observation of the environment. See the environment's observation space
                 for details.
-            start_pos: The starting position of the drone to generate waypoints at the beginning of the race.
+            start_pos: The starting position of the drone to generate waypoints at the beginning 
+                of the race.
 
         Returns:
             The waypoints for the trajectory calculation as a numpy array.
@@ -99,7 +100,7 @@ class AttitudeController(Controller):
 
     def avoid_obstacles(
         self, obs: dict[str, NDArray[np.floating]], waypoints: np.array
-    ) -> NDArray[np.floating]: 
+    ) -> NDArray[np.floating]:
         """Function to move waypoints to better avoid obstacles.
 
         Args:
@@ -112,23 +113,57 @@ class AttitudeController(Controller):
             [r_des, p_des, y_des, t_des] as a numpy array.
         """
         obstacles = np.asarray(obs["obstacles_pos"], dtype=float)
+        clearance = 0.3       # obstacle safety radius
+        detour_offset = 0.4    # how far to route around obstacle
+        
+        pre_turn_dist = 0.6        # begin turning before obstacle
+
+        lookahead_pts = 3          # inspect next 3 segments
 
         new_wp = [waypoints[0]]
 
         for i in range(1, len(waypoints)):
-            # p0 = new_wp[-1]
+            p0 = new_wp[-1]
             p1 = waypoints[i]
+            inserted_detour = False
+            for j in range(i, min(i + lookahead_pts, len(waypoints)-1)):
+                s0 = waypoints[j]
+                s1 = waypoints[j+1]
+                
+                seg = p1 - p0
+                seg_len = np.linalg.norm(seg)
 
-            for obst in obstacles:
-                d = np.linalg.norm(p1 - obst)
+                if seg_len < 1e-6:
+                    continue
 
-                if d < 0.35:
-                    # empuje lateral simple
-                    direction = p1 - obst
-                    direction /= (np.linalg.norm(direction) + 1e-6)
+                seg_dir = seg / seg_len
+                for obst in obstacles:
+                    # Project obstacle onto segment
+                    t = np.dot(obst - s0, seg_dir)
+                    t = np.clip(t, 0, seg_len)
 
-                    p1 = p1 + direction * 0.3
+                    closest = s0 + t * seg_dir
+                    dist = np.linalg.norm(obst - closest)
 
+                    if dist < clearance:
+                        # Perpendicular direction (2D x-y avoidance)
+                        perp = np.array([-seg_dir[1], seg_dir[0], 0.0])
+
+                        # Choose side that moves away from obstacle
+                        if np.dot(perp, obst - closest) > 0:
+                            perp = -perp
+
+                        detour_wp = (
+                        closest
+                        - seg_dir * pre_turn_dist
+                        + perp * detour_offset)
+
+                        # Insert new waypoint before final waypoint
+                        new_wp.append(detour_wp)
+                        inserted_detour = True
+                        break
+                if inserted_detour:
+                    break
             new_wp.append(p1)
 
         return np.array(new_wp)
@@ -155,6 +190,8 @@ class AttitudeController(Controller):
         self._t_total = 20
         self._des_pos_spline = CubicSpline(t, waypoints)
         self._des_vel_spline = self._des_pos_spline.derivative()
+
+        
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
