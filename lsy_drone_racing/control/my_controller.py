@@ -86,20 +86,18 @@ class AttitudeController(Controller):
         track_drones = list(config.env.track.drones)
 
         self.base_gates_pos = np.array(
-            [self._cfg_get(gate, "pos") for gate in track_gates], dtype=float,
+            [self._cfg_get(gate, "pos") for gate in track_gates], dtype=float
         )
 
         self.base_gates_rpy = np.array(
-            [self._cfg_get(gate, "rpy") for gate in track_gates], dtype=float,
+            [self._cfg_get(gate, "rpy") for gate in track_gates], dtype=float
         )
 
         self.base_obstacles_pos = np.array(
-            [self._cfg_get(obst, "pos") for obst in track_obstacles], dtype=float,
+            [self._cfg_get(obst, "pos") for obst in track_obstacles], dtype=float
         )
 
-        self.start_pos = np.array(
-            self._cfg_get(track_drones[0], "pos"), dtype=float,
-        )
+        self.start_pos = np.array(self._cfg_get(track_drones[0], "pos"), dtype=float)
 
         # These get updated when the sensor reveals randomized positions.
         self.current_gates_pos = self.base_gates_pos.copy()
@@ -239,9 +237,7 @@ class AttitudeController(Controller):
             )
             gate0_exit[2] = gates_pos[0][2] + 0.20
 
-            waypoints = [
-                start,
-            ]
+            waypoints = [start]
 
             if add_waypoint is not None:
                 waypoints.append(add_waypoint)
@@ -379,7 +375,7 @@ class AttitudeController(Controller):
             add_waypoint: Something something numpy array.
 
         Returns:
-            The spline that the drone will use in the next sector. 
+            The spline that the drone will use in the next sector.
         """
         waypoints = self._build_sector_waypoints(
             sector=sector, drone_pos=drone_pos, gates_pos=gates_pos, add_waypoint=add_waypoint
@@ -644,4 +640,3 @@ class AttitudeController(Controller):
         t_values = np.linspace(self._des_pos_spline.x[0], self._des_pos_spline.x[-1], 100)
         trajectory = self._des_pos_spline(t_values)
         draw_line(sim, trajectory, rgba=(0.0, 1.0, 0.0, 1.0))
-        
