@@ -36,6 +36,14 @@ class AttitudeController(Controller):
     """Spline planner + general PID + attitude/thrust output."""
 
     def __init__(self, obs: dict[str, NDArray[np.floating]], info: dict, config: dict):
+        """Initialize the attitude controller.
+
+        Args:
+            obs: The initial observation of the environment's state. See the environment's
+                observation space for details.
+            info: Additional environment information from the reset.
+            config: The configuration of the environment.
+        """
         super().__init__(obs, info, config)
 
         self._freq = config.env.freq
@@ -116,13 +124,13 @@ class AttitudeController(Controller):
         self._prev_action = np.zeros(4, dtype=np.float32)
 
     # Small utilities
-    def _cfg_get(self, obj, key):
+    def _cfg_get(self, obj: dict, key: str) -> np.ndarray:
         """Read from dict-like or ConfigDict-like object."""
         if isinstance(obj, dict):
             return obj[key]
         return getattr(obj, key)
 
-    def _target_gate_index(self, target_gate_obs) -> int:
+    def _target_gate_index(self, target_gate_obs: np.ndarray) -> int:
         """Convert target_gate observation to plain int."""
         return int(np.asarray(target_gate_obs).squeeze())
 
@@ -144,7 +152,12 @@ class AttitudeController(Controller):
         duration = float(np.clip(duration, self.min_sector_time, self.max_sector_time))
         return duration
 
-    def _time_array_for_waypoints(self, waypoints: np.ndarray, t0: float, duration: float) -> np.ndarray:
+    def _time_array_for_waypoints(
+        self, 
+        waypoints: np.ndarray, 
+        t0: float, 
+        duration: float
+    ) -> np.ndarray:
         """Allocate time proportional to segment length.
 
         This is better than np.linspace when some waypoints are close and others are far.
@@ -225,9 +238,7 @@ class AttitudeController(Controller):
 
         Returns:
             The waypoints of the sector as a numpy array.
-
         """
-
         if sector == 0:
             # Start from actual current drone position at sector entry.
             if self._sector_entry_pos is None:
@@ -546,7 +557,7 @@ class AttitudeController(Controller):
     def _pid_track_spline(
         self,
         spline: CubicSpline,
-        vel_spline,
+        vel_spline: CubicSpline,
         drone_pos: np.ndarray,
         drone_vel: np.ndarray,
         drone_quat: np.ndarray,
@@ -639,11 +650,16 @@ class AttitudeController(Controller):
         truncated: bool,
         info: dict,
     ) -> bool:
+        """Increment the tick counter.
+
+        Returns:
+            True if the controller is finished, False otherwise.
+        """
         self._tick += 1
         return self._finished
 
     def episode_callback(self):
-        """Reset internal state between episodes."""
+        """Reset the internal state."""
         self._tick = 0
         self._finished = False
         self._first_iteration = True
