@@ -86,23 +86,19 @@ class AttitudeController(Controller):
         track_drones = list(config.env.track.drones)
 
         self.base_gates_pos = np.array(
-            [self._cfg_get(gate, "pos") for gate in track_gates],
-            dtype=float,
+            [self._cfg_get(gate, "pos") for gate in track_gates], dtype=float,
         )
 
         self.base_gates_rpy = np.array(
-            [self._cfg_get(gate, "rpy") for gate in track_gates],
-            dtype=float,
+            [self._cfg_get(gate, "rpy") for gate in track_gates], dtype=float,
         )
 
         self.base_obstacles_pos = np.array(
-            [self._cfg_get(obst, "pos") for obst in track_obstacles],
-            dtype=float,
+            [self._cfg_get(obst, "pos") for obst in track_obstacles], dtype=float,
         )
 
         self.start_pos = np.array(
-            self._cfg_get(track_drones[0], "pos"),
-            dtype=float,
+            self._cfg_get(track_drones[0], "pos"), dtype=float,
         )
 
         # These get updated when the sensor reveals randomized positions.
@@ -153,10 +149,7 @@ class AttitudeController(Controller):
         return duration
 
     def _time_array_for_waypoints(
-        self, 
-        waypoints: np.ndarray, 
-        t0: float, 
-        duration: float
+        self, waypoints: np.ndarray, t0: float, duration: float
     ) -> np.ndarray:
         """Allocate time proportional to segment length.
 
@@ -186,11 +179,7 @@ class AttitudeController(Controller):
         return direction / norm
 
     def _gate_prev_next(
-        self,
-        gate_pos: np.ndarray,
-        gate_rpy: np.ndarray,
-        offset_prev: float,
-        offset_next: float,
+        self, gate_pos: np.ndarray, gate_rpy: np.ndarray, offset_prev: float, offset_next: float
     ) -> tuple[np.ndarray, np.ndarray]:
         """Point before and after gate along gate yaw direction."""
         direction = self._gate_direction_from_rpy(gate_rpy)
@@ -223,11 +212,7 @@ class AttitudeController(Controller):
 
     # Waypoint generation
     def _build_sector_waypoints(
-        self,
-        sector: int,
-        drone_pos: np.ndarray,
-        gates_pos: np.ndarray,
-        add_waypoint: np.ndarray,
+        self, sector: int, drone_pos: np.ndarray, gates_pos: np.ndarray, add_waypoint: np.ndarray
     ) -> np.ndarray:
         """Generate waypoints for the current sector.
 
@@ -250,10 +235,7 @@ class AttitudeController(Controller):
                 start = self._sector_entry_pos.copy()
 
             _, gate0_exit = self._gate_prev_next(
-                gates_pos[0],
-                self.current_gates_rpy[0],
-                offset_prev=0.40,
-                offset_next=0.40,
+                gates_pos[0], self.current_gates_rpy[0], offset_prev=0.40, offset_next=0.40
             )
             gate0_exit[2] = gates_pos[0][2] + 0.20
 
@@ -264,123 +246,79 @@ class AttitudeController(Controller):
             if add_waypoint is not None:
                 waypoints.append(add_waypoint)
 
-            waypoints += [
-                gates_pos[0],
-                gate0_exit,
-            ]
+            waypoints += [gates_pos[0], gate0_exit]
 
         elif sector == 1:
             helper_1 = self._shifted_nominal_point(
-                [1.20, -0.25, 1.10],
-                gates_pos,
-                nearby_gate_ids=[0, 1],
+                [1.20, -0.25, 1.10], gates_pos, nearby_gate_ids=[0, 1]
             )
 
             helper_after = self._shifted_nominal_point(
-                [-0.50, -0.05, 0.80],
-                gates_pos,
-                nearby_gate_ids=[1, 2],
+                [-0.50, -0.05, 0.80], gates_pos, nearby_gate_ids=[1, 2]
             )
 
-            waypoints = [
-                gates_pos[0],
-                helper_1,
-            ]
+            waypoints = [gates_pos[0], helper_1]
 
             if add_waypoint is not None:
                 waypoints.append(add_waypoint)
 
-            waypoints += [
-                gates_pos[1],
-                helper_after,
-            ]
+            waypoints += [gates_pos[1], helper_after]
 
         elif sector == 2:
             _, gate1_exit = self._gate_prev_next(
-                gates_pos[1],
-                self.current_gates_rpy[1],
-                offset_prev=0.10,
-                offset_next=0.20,
+                gates_pos[1], self.current_gates_rpy[1], offset_prev=0.10, offset_next=0.20
             )
 
             _, gate2_exit = self._gate_prev_next(
-                gates_pos[2],
-                self.current_gates_rpy[2],
-                offset_prev=0.40,
-                offset_next=0.30,
+                gates_pos[2], self.current_gates_rpy[2], offset_prev=0.40, offset_next=0.30
             )
 
             helper_mid = self._shifted_nominal_point(
-                [-0.50, -0.05, 0.80],
-                gates_pos,
-                nearby_gate_ids=[1, 2],
+                [-0.50, -0.05, 0.80], gates_pos, nearby_gate_ids=[1, 2]
             )
 
-            waypoints = [
-                gate1_exit,
-            ]
+            waypoints = [gate1_exit]
 
             if add_waypoint is not None:
                 waypoints.append(add_waypoint)
 
-            waypoints += [
-                helper_mid,
-                gates_pos[2],
-                gate2_exit,
-            ]
+            waypoints += [helper_mid, gates_pos[2], gate2_exit]
 
         elif sector == 3:
             _, gate3_exit = self._gate_prev_next(
-                gates_pos[3],
-                self.current_gates_rpy[3],
-                offset_prev=0.20,
-                offset_next=0.40,
+                gates_pos[3], self.current_gates_rpy[3], offset_prev=0.20, offset_next=0.40
             )
 
             helper_mid = self._shifted_nominal_point(
-                [-0.50, -0.40, 0.90],
-                gates_pos,
-                nearby_gate_ids=[2, 3],
+                [-0.50, -0.40, 0.90], gates_pos, nearby_gate_ids=[2, 3]
             )
 
-            waypoints = [
-                gates_pos[2],
-                helper_mid,
-            ]
+            waypoints = waypoints = [gates_pos[2], helper_mid]
 
             if add_waypoint is not None:
                 waypoints.append(add_waypoint)
 
-            waypoints += [
-                gates_pos[3],
-                gate3_exit,
-            ]
+            waypoints += [gates_pos[3], gate3_exit]
 
         else:
             # Fallback hover if something unexpected happens.
-            waypoints = [
-                drone_pos,
-                drone_pos,
-            ]
+            waypoints = [drone_pos, drone_pos]
 
         return np.array(waypoints, dtype=float)
 
     # Obstacle avoidance
     def _check_obstacle_collision(
-        self,
-        spline: CubicSpline,
-        sector: int,
-        obstacle_index: int,
+        self, spline: CubicSpline, sector: int, obstacle_index: int
     ) -> np.ndarray | None:
         """Check if current spline passes too close to one obstacle in XY.
-        
+
         Args:
             spline: The current spline.
             sector: The current sector.
             obstacle_index: The index of the next obstacle.
 
         Returns:
-            A waypoint to insert if too close. 
+            A waypoint to insert if too close.
         """
         if not self.use_obstacle_avoidance:
             return None
@@ -417,12 +355,7 @@ class AttitudeController(Controller):
         push = (closest_delta / (min_dist + 1e-3)) * self.obstacle_push_distance
 
         avoidance_wp = np.array(
-            [
-                obstacle[0] - push[0],
-                obstacle[1] - push[1],
-                closest_pos[2],
-            ],
-            dtype=float,
+            [obstacle[0] - push[0], obstacle[1] - push[1], closest_pos[2]], dtype=float
         )
 
         return avoidance_wp
@@ -447,31 +380,23 @@ class AttitudeController(Controller):
 
         Returns:
             The spline that the drone will use in the next sector. 
-        
         """
         waypoints = self._build_sector_waypoints(
-            sector=sector,
-            drone_pos=drone_pos,
-            gates_pos=gates_pos,
-            add_waypoint=add_waypoint,
+            sector=sector, drone_pos=drone_pos, gates_pos=gates_pos, add_waypoint=add_waypoint
         )
 
         duration = self._compute_duration(waypoints)
         self._sector_duration = duration
 
         t_array = self._time_array_for_waypoints(
-            waypoints=waypoints,
-            t0=self._sector_start_time,
-            duration=duration,
+            waypoints=waypoints, t0=self._sector_start_time, duration=duration
         )
 
         spline = CubicSpline(t_array, waypoints)
 
         # Obstacle correction: check obstacle with same index as sector.
         avoidance_wp = self._check_obstacle_collision(
-            spline=spline,
-            sector=sector,
-            obstacle_index=sector,
+            spline=spline, sector=sector, obstacle_index=sector
         )
 
         if avoidance_wp is not None and self.current_rec_depth < self.max_avoidance_recursion:
@@ -490,9 +415,7 @@ class AttitudeController(Controller):
         return spline
 
     def compute_control(
-        self,
-        obs: dict[str, NDArray[np.floating]],
-        info: dict | None = None,
+        self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
     ) -> NDArray[np.floating]:
         """Compute the next desired collective thrust and roll/pitch/yaw of the drone.
 
@@ -558,10 +481,7 @@ class AttitudeController(Controller):
             self.current_obstacles_pos = obstacles_pos.copy()
 
             self._des_pos_spline = self._build_sector_spline(
-                t_now=t,
-                sector=target_gate,
-                drone_pos=drone_pos,
-                gates_pos=gates_pos,
+                t_now=t, sector=target_gate, drone_pos=drone_pos, gates_pos=gates_pos
             )
 
             self._des_vel_spline = self._des_pos_spline.derivative()
@@ -658,25 +578,13 @@ class AttitudeController(Controller):
         else:
             x_axis_desired /= x_norm
 
-        R_desired = np.vstack(
-            [
-                x_axis_desired,
-                y_axis_desired,
-                z_axis_desired,
-            ]
-        ).T
+        R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
 
         euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
         euler_desired = np.clip(euler_desired, -np.pi / 2, np.pi / 2)
 
         action = np.array(
-            [
-                euler_desired[0],
-                euler_desired[1],
-                euler_desired[2],
-                thrust_desired,
-            ],
-            dtype=np.float32,
+            [euler_desired[0], euler_desired[1], euler_desired[2], thrust_desired], dtype=np.float32
         )
 
         return action
@@ -736,3 +644,4 @@ class AttitudeController(Controller):
         t_values = np.linspace(self._des_pos_spline.x[0], self._des_pos_spline.x[-1], 100)
         trajectory = self._des_pos_spline(t_values)
         draw_line(sim, trajectory, rgba=(0.0, 1.0, 0.0, 1.0))
+        
